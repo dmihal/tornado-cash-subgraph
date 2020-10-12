@@ -1,0 +1,6 @@
+type ExampleEntity @entity {
+  id: ID!
+  count: BigInt!
+  commitment: Bytes! # bytes32
+  leafIndex: BigInt! # uint32
+}
