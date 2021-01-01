@@ -25,6 +25,8 @@ type TornadoPool @entity {
 
   "Total deposits since pool creation"
   totalDeposits: BigInt!
+  "Total withdrawals since pool creation"
+  totalWithdrawals: BigInt!
 
   "The value of tokens that have been withdrawn from the pool"
   totalVolume: BigDecimal!

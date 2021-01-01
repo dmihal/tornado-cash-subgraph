@@ -1,6 +1,7 @@
-import { BigInt, Address, ethereum } from "@graphprotocol/graph-ts"
+import { BigDecimal, BigInt, Bytes, Address, ethereum } from "@graphprotocol/graph-ts"
 import { TornadoPool as TornadoPoolContract, Deposit, Withdrawal } from "../generated/ETH1/TornadoPool"
 import { ERC20 } from "../generated/ETH1/ERC20"
+import { Medianizer } from "../generated/ETH1/Medianizer"
 import { Tornado, TornadoPool } from "../generated/schema"
 
 let zero = '0x0000000000000000000000000000000000000000'
@@ -32,6 +33,7 @@ function getPool(address: Address): TornadoPool {
     pool.setSize = BigInt.fromI32(0)
     pool.poolSize = BigInt.fromI32(0).toBigDecimal()
     pool.totalDeposits = BigInt.fromI32(0)
+    pool.totalWithdrawals = BigInt.fromI32(0)
     pool.totalVolume = BigInt.fromI32(0).toBigDecimal()
     pool.totalFees = BigInt.fromI32(0).toBigDecimal()
     pool.totalVolumeUSD = BigInt.fromI32(0).toBigDecimal()
@@ -47,7 +49,13 @@ function getTornado(): Tornado {
     tornado.totalVolumeUSD = BigInt.fromI32(0).toBigDecimal()
     tornado.totalFeesUSD = BigInt.fromI32(0).toBigDecimal()
   }
-  return tornado
+  return tornado!
+}
+
+function getETHPrice(): BigDecimal {
+  let medianizer = Medianizer.bind(Address.fromString('0x729D19f657BD0614b4985Cf1D82531c67569197B'))
+  let oraclePrice = BigInt.fromUnsignedBytes(medianizer.read().reverse() as Bytes)
+  return oraclePrice.divDecimal(BigInt.fromI32(10).pow(18).toBigDecimal())
 }
 
 export function handleDeposit(event: Deposit): void {
@@ -63,6 +71,7 @@ export function handleDeposit(event: Deposit): void {
 export function handleWithdrawal(event: Withdrawal): void {
   let pool = getPool(event.address)
 
+  pool.totalWithdrawals += BigInt.fromI32(1)
   pool.setSize -= BigInt.fromI32(1)
   pool.poolSize = pool.setSize.toBigDecimal() * pool.denomination
   pool.totalVolume += pool.denomination
@@ -71,7 +80,19 @@ export function handleWithdrawal(event: Withdrawal): void {
     let assetAddressStr = pool.asset.toHex()
     let decimals = assetAddressStr == zero ? 18 : ERC20.bind(Address.fromString(assetAddressStr)).decimals()
     let baseUnit = BigInt.fromI32(10).pow(decimals as u8).toBigDecimal()
-    pool.totalFees += event.params.fee.divDecimal(baseUnit)
+    let fee = event.params.fee.divDecimal(baseUnit)
+    pool.totalFees += fee
+
+    // Assume a price of $1 for all stablecoins
+    let price = assetAddressStr == zero ? getETHPrice() : BigInt.fromI32(1).toBigDecimal()
+
+    pool.totalVolumeUSD += pool.denomination * price
+    pool.totalFeesUSD += fee * price
+
+    let tornado = getTornado()
+    tornado.totalVolumeUSD += pool.denomination * price
+    tornado.totalFeesUSD += fee * price
+    tornado.save()
   }
 
   pool.save()

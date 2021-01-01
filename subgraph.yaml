@@ -21,6 +21,8 @@ dataSources:
           file: ./abis/TornadoPool.json
         - name: ERC20
           file: ./abis/ERC20.json
+        - name: Medianizer
+          file: ./abis/Medianizer.json
       eventHandlers:
         - event: Deposit(indexed bytes32,uint32,uint256)
           handler: handleDeposit
@@ -46,6 +48,8 @@ dataSources:
           file: ./abis/TornadoPool.json
         - name: ERC20
           file: ./abis/ERC20.json
+        - name: Medianizer
+          file: ./abis/Medianizer.json
       eventHandlers:
         - event: Deposit(indexed bytes32,uint32,uint256)
           handler: handleDeposit
@@ -71,6 +75,8 @@ dataSources:
           file: ./abis/TornadoPool.json
         - name: ERC20
           file: ./abis/ERC20.json
+        - name: Medianizer
+          file: ./abis/Medianizer.json
       eventHandlers:
         - event: Deposit(indexed bytes32,uint32,uint256)
           handler: handleDeposit
@@ -96,6 +102,8 @@ dataSources:
           file: ./abis/TornadoPool.json
         - name: ERC20
           file: ./abis/ERC20.json
+        - name: Medianizer
+          file: ./abis/Medianizer.json
       eventHandlers:
         - event: Deposit(indexed bytes32,uint32,uint256)
           handler: handleDeposit
@@ -121,6 +129,35 @@ dataSources:
           file: ./abis/TornadoPool.json
         - name: ERC20
           file: ./abis/ERC20.json
+        - name: Medianizer
+          file: ./abis/Medianizer.json
+      eventHandlers:
+        - event: Deposit(indexed bytes32,uint32,uint256)
+          handler: handleDeposit
+        - event: Withdrawal(address,bytes32,indexed address,uint256)
+          handler: handleWithdrawal
+      file: ./src/mapping.ts
+  - kind: ethereum/contract
+    name: USDC1000
+    network: mainnet
+    source:
+      address: "0x4736dcf1b7a3d580672cce6e7c65cd5cc9cfba9d"
+      abi: TornadoPool
+      startBlock: 9160000
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.4
+      language: wasm/assemblyscript
+      entities:
+        - Deposit
+        - Withdrawal
+      abis:
+        - name: TornadoPool
+          file: ./abis/TornadoPool.json
+        - name: ERC20
+          file: ./abis/ERC20.json
+        - name: Medianizer
+          file: ./abis/Medianizer.json
       eventHandlers:
         - event: Deposit(indexed bytes32,uint32,uint256)
           handler: handleDeposit
@@ -146,6 +183,8 @@ dataSources:
           file: ./abis/TornadoPool.json
         - name: ERC20
           file: ./abis/ERC20.json
+        - name: Medianizer
+          file: ./abis/Medianizer.json
       eventHandlers:
         - event: Deposit(indexed bytes32,uint32,uint256)
           handler: handleDeposit
@@ -153,10 +192,10 @@ dataSources:
           handler: handleWithdrawal
       file: ./src/mapping.ts
   - kind: ethereum/contract
-    name: cDai500k
+    name: USDT1000
     network: mainnet
     source:
-      address: "0xb1c8094b234dce6e03f10a5b673c1d8c69739a00"
+      address: "0x0836222f2b2b24a3f36f98668ed8f0b38d1a872f"
       abi: TornadoPool
       startBlock: 9160000
     mapping:
@@ -171,6 +210,62 @@ dataSources:
           file: ./abis/TornadoPool.json
         - name: ERC20
           file: ./abis/ERC20.json
+        - name: Medianizer
+          file: ./abis/Medianizer.json
+      eventHandlers:
+        - event: Deposit(indexed bytes32,uint32,uint256)
+          handler: handleDeposit
+        - event: Withdrawal(address,bytes32,indexed address,uint256)
+          handler: handleWithdrawal
+      file: ./src/mapping.ts
+  - kind: ethereum/contract
+    name: Dai100
+    network: mainnet
+    source:
+      address: "0xD4B88Df4D29F5CedD6857912842cff3b20C8Cfa3"
+      abi: TornadoPool
+      startBlock: 9160000
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.4
+      language: wasm/assemblyscript
+      entities:
+        - Deposit
+        - Withdrawal
+      abis:
+        - name: TornadoPool
+          file: ./abis/TornadoPool.json
+        - name: ERC20
+          file: ./abis/ERC20.json
+        - name: Medianizer
+          file: ./abis/Medianizer.json
+      eventHandlers:
+        - event: Deposit(indexed bytes32,uint32,uint256)
+          handler: handleDeposit
+        - event: Withdrawal(address,bytes32,indexed address,uint256)
+          handler: handleWithdrawal
+      file: ./src/mapping.ts
+  - kind: ethereum/contract
+    name: Dai1000
+    network: mainnet
+    source:
+      address: "0xfd8610d20aa15b7b2e3be39b396a1bc3516c7144"
+      abi: TornadoPool
+      startBlock: 9160000
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.4
+      language: wasm/assemblyscript
+      entities:
+        - Deposit
+        - Withdrawal
+      abis:
+        - name: TornadoPool
+          file: ./abis/TornadoPool.json
+        - name: ERC20
+          file: ./abis/ERC20.json
+        - name: Medianizer
+          file: ./abis/Medianizer.json
       eventHandlers:
         - event: Deposit(indexed bytes32,uint32,uint256)
           handler: handleDeposit
