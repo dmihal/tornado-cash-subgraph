@@ -1,66 +1,78 @@
-import { BigInt } from "@graphprotocol/graph-ts"
-import { Contract, Deposit, Withdrawal } from "../generated/Contract/Contract"
-import { ExampleEntity } from "../generated/schema"
+import { BigInt, Address, ethereum } from "@graphprotocol/graph-ts"
+import { TornadoPool as TornadoPoolContract, Deposit, Withdrawal } from "../generated/ETH1/TornadoPool"
+import { ERC20 } from "../generated/ETH1/ERC20"
+import { Tornado, TornadoPool } from "../generated/schema"
 
-export function handleDeposit(event: Deposit): void {
-  // Entities can be loaded from the store using a string ID; this ID
-  // needs to be unique across all entities of the same type
-  let entity = ExampleEntity.load(event.transaction.from.toHex())
+let zero = '0x0000000000000000000000000000000000000000'
 
-  // Entities only exist after they have been saved to the store;
-  // `null` checks allow to create entities on demand
-  if (entity == null) {
-    entity = new ExampleEntity(event.transaction.from.toHex())
-
-    // Entity fields can be set using simple assignments
-    entity.count = BigInt.fromI32(0)
+function addressOrZero(result: ethereum.CallResult<Address>): Address {
+  if (result.reverted) {
+    return Address.fromString(zero)
+  } else {
+    return result.value
   }
-
-  // BigInt and BigDecimal math are supported
-  entity.count = entity.count + BigInt.fromI32(1)
-
-  // Entity fields can be set based on event parameters
-  entity.commitment = event.params.commitment
-  entity.leafIndex = event.params.leafIndex
-
-  // Entities can be written to the store with `.save()`
-  entity.save()
-
-  // Note: If a handler doesn't require existing field values, it is faster
-  // _not_ to load the entity from the store. Instead, create it fresh with
-  // `new Entity(...)`, set the fields that should be updated and save the
-  // entity back to the store. Fields that were not set or unset remain
-  // unchanged, allowing for partial updates to be applied.
-
-  // It is also possible to access smart contracts from mappings. For
-  // example, the contract that has emitted the event can be connected to
-  // with:
-  //
-  // let contract = Contract.bind(event.address)
-  //
-  // The following functions can then be called on this contract to access
-  // state variables and other data:
-  //
-  // - contract.nullifierHashes(...)
-  // - contract.verifier(...)
-  // - contract.hashLeftRight(...)
-  // - contract.FIELD_SIZE(...)
-  // - contract.levels(...)
-  // - contract.operator(...)
-  // - contract.isKnownRoot(...)
-  // - contract.commitments(...)
-  // - contract.denomination(...)
-  // - contract.currentRootIndex(...)
-  // - contract.isSpentArray(...)
-  // - contract.getLastRoot(...)
-  // - contract.roots(...)
-  // - contract.ROOT_HISTORY_SIZE(...)
-  // - contract.isSpent(...)
-  // - contract.zeros(...)
-  // - contract.ZERO_VALUE(...)
-  // - contract.filledSubtrees(...)
-  // - contract.token(...)
-  // - contract.nextIndex(...)
 }
 
-export function handleWithdrawal(event: Withdrawal): void {}
+function getPool(address: Address): TornadoPool {
+  let pool = TornadoPool.load(address.toHex())
+  if (!pool) {
+    let poolContract = TornadoPoolContract.bind(address)
+    pool = new TornadoPool(address.toHex())
+
+    let tokenResult = poolContract.try_token()
+    pool.asset = addressOrZero(tokenResult)
+
+    let decimals = tokenResult.reverted ? 18 : ERC20.bind(tokenResult.value).decimals()
+    let baseUnit = BigInt.fromI32(10).pow(decimals as u8).toBigDecimal()
+    pool.denomination = poolContract.denomination().divDecimal(baseUnit)
+
+    let tokenSymbol = tokenResult.reverted ? 'ETH' : ERC20.bind(tokenResult.value).symbol()
+    pool.name = tokenSymbol.concat(' ').concat(pool.denomination.toString())
+
+    pool.setSize = BigInt.fromI32(0)
+    pool.poolSize = BigInt.fromI32(0).toBigDecimal()
+    pool.totalDeposits = BigInt.fromI32(0)
+    pool.totalVolume = BigInt.fromI32(0).toBigDecimal()
+    pool.totalFees = BigInt.fromI32(0).toBigDecimal()
+    pool.totalVolumeUSD = BigInt.fromI32(0).toBigDecimal()
+    pool.totalFeesUSD = BigInt.fromI32(0).toBigDecimal()
+  }
+  return pool!
+}
+
+function getTornado(): Tornado {
+  let tornado = Tornado.load('1')
+  if (!tornado) {
+    tornado = new Tornado('1')
+    tornado.totalVolumeUSD = BigInt.fromI32(0).toBigDecimal()
+    tornado.totalFeesUSD = BigInt.fromI32(0).toBigDecimal()
+  }
+  return tornado
+}
+
+export function handleDeposit(event: Deposit): void {
+  let pool = getPool(event.address)
+
+  pool.setSize += BigInt.fromI32(1)
+  pool.poolSize = pool.setSize.toBigDecimal() * pool.denomination
+  pool.totalDeposits += BigInt.fromI32(1)
+
+  pool.save()
+}
+
+export function handleWithdrawal(event: Withdrawal): void {
+  let pool = getPool(event.address)
+
+  pool.setSize -= BigInt.fromI32(1)
+  pool.poolSize = pool.setSize.toBigDecimal() * pool.denomination
+  pool.totalVolume += pool.denomination
+
+  if (event.params.fee > BigInt.fromI32(0)) {
+    let assetAddressStr = pool.asset.toHex()
+    let decimals = assetAddressStr == zero ? 18 : ERC20.bind(Address.fromString(assetAddressStr)).decimals()
+    let baseUnit = BigInt.fromI32(10).pow(decimals as u8).toBigDecimal()
+    pool.totalFees += event.params.fee.divDecimal(baseUnit)
+  }
+
+  pool.save()
+}

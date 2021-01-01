@@ -1,6 +1,38 @@
-type ExampleEntity @entity {
+type Tornado @entity {
   id: ID!
-  count: BigInt!
-  commitment: Bytes! # bytes32
-  leafIndex: BigInt! # uint32
+
+  "The USD value of tokens that have been withdrawn from the pool"
+  totalVolumeUSD: BigDecimal!
+  "The USD value of tokens paid as fees to relayers"
+  totalFeesUSD: BigDecimal!
+}
+
+type TornadoPool @entity {
+  id: ID!
+
+  name: String!
+
+  "The address of the token held by the pool (or 0x0 if ETH)"
+  asset: Bytes!
+
+  "The value of each deposit in the pool"
+  denomination: BigDecimal!
+
+  "The total number of unclaimed deposits"
+  setSize: BigInt!
+  "The total balance of assets custodied by the pool"
+  poolSize: BigDecimal!
+
+  "Total deposits since pool creation"
+  totalDeposits: BigInt!
+
+  "The value of tokens that have been withdrawn from the pool"
+  totalVolume: BigDecimal!
+  "The value of tokens paid as fees to relayers"
+  totalFees: BigDecimal!
+
+  "The USD value of tokens that have been withdrawn from the pool"
+  totalVolumeUSD: BigDecimal!
+  "The USD value of tokens paid as fees to relayers"
+  totalFeesUSD: BigDecimal!
 }
