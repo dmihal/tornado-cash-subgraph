@@ -54,46 +54,50 @@ function getTornado(): Tornado {
 
 function getETHPrice(): BigDecimal {
   let medianizer = Medianizer.bind(Address.fromString('0x729D19f657BD0614b4985Cf1D82531c67569197B'))
-  let oraclePrice = BigInt.fromUnsignedBytes(medianizer.read().reverse() as Bytes)
+  let oraclePrice = BigInt.fromUnsignedBytes(medianizer.peek().value0.reverse() as Bytes)
   return oraclePrice.divDecimal(BigInt.fromI32(10).pow(18).toBigDecimal())
 }
 
 export function handleDeposit(event: Deposit): void {
   let pool = getPool(event.address)
+  let tornado = getTornado()
 
   pool.setSize += BigInt.fromI32(1)
   pool.poolSize = pool.setSize.toBigDecimal() * pool.denomination
   pool.totalDeposits += BigInt.fromI32(1)
+  tornado.totalDeposits += BigInt.fromI32(1)
 
   pool.save()
+  tornado.save()
 }
 
 export function handleWithdrawal(event: Withdrawal): void {
   let pool = getPool(event.address)
+  let tornado = getTornado()
 
+  tornado.totalWithdrawals += BigInt.fromI32(1)
   pool.totalWithdrawals += BigInt.fromI32(1)
   pool.setSize -= BigInt.fromI32(1)
   pool.poolSize = pool.setSize.toBigDecimal() * pool.denomination
   pool.totalVolume += pool.denomination
 
+  let assetAddressStr = pool.asset.toHex()
+  // Assume a price of $1 for all stablecoins
+  let price = assetAddressStr == zero ? getETHPrice() : BigInt.fromI32(1).toBigDecimal()
+
+  tornado.totalVolumeUSD += pool.denomination * price
+  pool.totalVolumeUSD += pool.denomination * price
+
   if (event.params.fee > BigInt.fromI32(0)) {
-    let assetAddressStr = pool.asset.toHex()
     let decimals = assetAddressStr == zero ? 18 : ERC20.bind(Address.fromString(assetAddressStr)).decimals()
     let baseUnit = BigInt.fromI32(10).pow(decimals as u8).toBigDecimal()
     let fee = event.params.fee.divDecimal(baseUnit)
     pool.totalFees += fee
 
-    // Assume a price of $1 for all stablecoins
-    let price = assetAddressStr == zero ? getETHPrice() : BigInt.fromI32(1).toBigDecimal()
-
-    pool.totalVolumeUSD += pool.denomination * price
     pool.totalFeesUSD += fee * price
-
-    let tornado = getTornado()
-    tornado.totalVolumeUSD += pool.denomination * price
     tornado.totalFeesUSD += fee * price
-    tornado.save()
   }
 
+  tornado.save()
   pool.save()
 }

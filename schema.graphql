@@ -1,6 +1,11 @@
 type Tornado @entity {
   id: ID!
 
+  "Total deposits to all pools"
+  totalDeposits: BigInt!
+  "Total withdrawals from all pools"
+  totalWithdrawals: BigInt!
+
   "The USD value of tokens that have been withdrawn from the pool"
   totalVolumeUSD: BigDecimal!
   "The USD value of tokens paid as fees to relayers"
